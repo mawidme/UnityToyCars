@@ -18,7 +18,7 @@ public class WheelController : MonoBehaviour
 
     public float acceleration = 500f;
     public float breakForce = 300f;
-    public float standBreakForce = 50f;
+    public float standBreakForce = 10f;
     // public float maxTurnAngle = 15f;
     public float maxTurnAngle = 25f;
 
@@ -30,16 +30,18 @@ public class WheelController : MonoBehaviour
     public string backKey = "s";
     public string rightKey = "d";
     public string leftKey = "a";
-
+    
     private void FixedUpdate() {
+        curAcceleration = 0f;
+        curBreakForce = 0f;
+
         var totalRpm = frontRight.rpm + frontLeft.rpm + backRight.rpm + backLeft.rpm;
-        var rollingForward = totalRpm > 10;
-        var rollingBack = totalRpm < -10;
+        var rollingForward = totalRpm > 10f;
+        var rollingBack = totalRpm < -10f;
 
         var noKeyPressed = true;
 
         // curAcceleration = acceleration * Input.GetAxis("Vertical");
-        curAcceleration = 0f;
         if (Input.GetKey(forwardKey)) {
             noKeyPressed = false;
             if (rollingBack) {
@@ -50,7 +52,6 @@ public class WheelController : MonoBehaviour
         }
 
         // brake on space
-        curBreakForce = 0f;
         // if (Input.GetKey(KeyCode.Space)) {
         if (Input.GetKey(backKey)) {
             noKeyPressed = false;
