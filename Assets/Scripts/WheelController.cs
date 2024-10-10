@@ -17,71 +17,106 @@ public class WheelController : MonoBehaviour
     // [SerializeField] Transform backLeftTransform;
 
     public float acceleration = 500f;
-    public float breakForce = 300f;
-    public float standBreakForce = 10f;
+    public float brakeForce = 300f;
+    public float standBrakeForce = 10f;
     // public float maxTurnAngle = 15f;
     public float maxTurnAngle = 25f;
 
     private float curAcceleration = 0f;
-    private float curBreakForce = 0f;
+    private float curBrakeForce = 0f;
     private float curTurnAngle = 0f;
 
-    public string forwardKey = "w";
-    public string backKey = "s";
-    public string rightKey = "d";
-    public string leftKey = "a";
+    // public string forwardKey = "w";
+    // public string backKey = "s";
+    // public string rightKey = "d";
+    // public string leftKey = "a";
+    private string forwardKey = "up";
+    private string backKey = "down";
+    private string rightKey = "right";
+    private string leftKey = "left";
+    
+    public float deltaX = 0f;
+    public bool touchToggle = false;
+    
+    public bool isActive = false;
+    
+    public void activate() { isActive = true; Debug.Log("car activated"); }
+    public void deactivate() { isActive = false; Debug.Log("car deactivated"); }
     
     private void FixedUpdate() {
         curAcceleration = 0f;
-        curBreakForce = 0f;
+        curBrakeForce = 0f;
+        var steer = 0f;
 
         var totalRpm = frontRight.rpm + frontLeft.rpm + backRight.rpm + backLeft.rpm;
         var rollingForward = totalRpm > 10f;
         var rollingBack = totalRpm < -10f;
 
-        var noKeyPressed = true;
+        var controlInput = false;
 
-        // curAcceleration = acceleration * Input.GetAxis("Vertical");
-        if (Input.GetKey(forwardKey)) {
-            noKeyPressed = false;
-            if (rollingBack) {
-                curBreakForce = breakForce;
-            } else {
-                curAcceleration += acceleration;
+        var touchTop = false;
+        var touchBottom = false;
+        var touchLeft = false;
+        var touchRight = false;
+        var touchPrev = false;
+        var touchNext = false;
+        foreach (var touch in Input.touches) {
+            var xPosNorm = touch.position.x / Screen.width;
+            var yPosNorm = touch.position.y / Screen.height;
+            
+            touchTop |= xPosNorm > 0.6f && yPosNorm > 0.6f;
+            touchBottom |= xPosNorm > 0.6f && yPosNorm < 0.4f;
+            
+            touchLeft |= xPosNorm < 0.25f && yPosNorm < 0.4f;
+            touchRight |= !touchLeft && xPosNorm < 0.5f && yPosNorm < 0.4f;
+
+            touchPrev |= xPosNorm < 0.25f && yPosNorm > 0.6f;
+            touchNext |= !touchPrev && xPosNorm < 0.5f && yPosNorm > 0.6f;
+        }
+        
+        if (isActive) {
+            // curAcceleration = acceleration * Input.GetAxis("Vertical");
+            if (Input.GetKey(forwardKey) || touchTop) {
+                controlInput = true;
+                if (rollingBack) {
+                    curBrakeForce = brakeForce;
+                } else {
+                    curAcceleration += acceleration;
+                }
+            }
+
+            // brake on space
+            // if (Input.GetKey(KeyCode.Space)) {
+            if (Input.GetKey(backKey) || touchBottom) {
+                controlInput = true;
+                if (rollingForward) {
+                    curBrakeForce = brakeForce;
+                } else {
+                    curAcceleration -= acceleration;
+                }
+            }
+
+            if (Input.GetKey(leftKey) || touchLeft) {
+                steer -= 1f;
+            }
+            if (Input.GetKey(rightKey) || touchRight) {
+                steer += 1f;
             }
         }
 
-        // brake on space
-        // if (Input.GetKey(KeyCode.Space)) {
-        if (Input.GetKey(backKey)) {
-            noKeyPressed = false;
-            if (rollingForward) {
-                curBreakForce = breakForce;
-            } else {
-                curAcceleration -= acceleration;
-            }
-        }
-
-        if (noKeyPressed) {
-            curBreakForce = standBreakForce;
+        if (!controlInput) {
+            curBrakeForce = standBrakeForce;
         }
 
         frontRight.motorTorque = curAcceleration;
         frontLeft.motorTorque = curAcceleration;
 
-        frontRight.brakeTorque = curBreakForce;
-        frontLeft.brakeTorque = curBreakForce;
-        backRight.brakeTorque = curBreakForce;
-        backLeft.brakeTorque = curBreakForce;
+        frontRight.brakeTorque = curBrakeForce;
+        frontLeft.brakeTorque = curBrakeForce;
+        backRight.brakeTorque = curBrakeForce;
+        backLeft.brakeTorque = curBrakeForce;
 
         // curTurnAngle = maxTurnAngle * Input.GetAxis("Horizontal");
-        var steer = 0f;
-        if (Input.GetKey(leftKey)) {
-            steer -= 1f;
-        }
-        if (Input.GetKey(rightKey)) {
-            steer += 1f;
-        }
         curTurnAngle = maxTurnAngle * steer;
         frontLeft.steerAngle = curTurnAngle;
         frontRight.steerAngle = curTurnAngle;
@@ -107,7 +142,7 @@ public class WheelController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        Debug.Log("WheelController start, isActive=" + isActive);
     }
 
     // Update is called once per frame
