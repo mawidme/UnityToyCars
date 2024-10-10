@@ -58,8 +58,6 @@ public class WheelController : MonoBehaviour
         var touchBottom = false;
         var touchLeft = false;
         var touchRight = false;
-        var touchPrev = false;
-        var touchNext = false;
         foreach (var touch in Input.touches) {
             var xPosNorm = touch.position.x / Screen.width;
             var yPosNorm = touch.position.y / Screen.height;
@@ -69,9 +67,6 @@ public class WheelController : MonoBehaviour
             
             touchLeft |= xPosNorm < 0.25f && yPosNorm < 0.4f;
             touchRight |= !touchLeft && xPosNorm < 0.5f && yPosNorm < 0.4f;
-
-            touchPrev |= xPosNorm < 0.25f && yPosNorm > 0.6f;
-            touchNext |= !touchPrev && xPosNorm < 0.5f && yPosNorm > 0.6f;
         }
         
         if (isActive) {

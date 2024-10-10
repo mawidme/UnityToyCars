@@ -59,7 +59,18 @@ public class Control : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown("t")) {
+        var touchNext = false;
+        // foreach (var touch in Input.touches) {
+        foreach (var touch in Input.touches) {
+            if (touch.phase != TouchPhase.Began) continue;
+            
+            var xPosNorm = touch.position.x / Screen.width;
+            var yPosNorm = touch.position.y / Screen.height;
+            
+            touchNext |= xPosNorm < 0.5f && yPosNorm > 0.6f;
+        }
+        
+        if (Input.GetKeyDown("t") || touchNext) {
             Debug.Log("switch car");
             
             // disable old car
