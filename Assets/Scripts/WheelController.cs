@@ -40,8 +40,8 @@ public class WheelController : MonoBehaviour
     
     public bool isActive = false;
     
-    public void activate() { isActive = true; Debug.Log("car activated"); }
-    public void deactivate() { isActive = false; Debug.Log("car deactivated"); }
+    public void activate() { isActive = true; }
+    public void deactivate() { isActive = false; }
     
     private void FixedUpdate() {
         curAcceleration = 0f;
@@ -137,12 +137,10 @@ public class WheelController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log("WheelController start, isActive=" + isActive);
     }
 
     // Update is called once per frame
     void Update()
     {
-        
     }
 }

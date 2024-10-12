@@ -42,10 +42,6 @@ public class Control : MonoBehaviour
                 break;
             }
 
-            if (i > 10) {
-                Debug.Log("imax");
-                break;
-            }
             cars.Add(carObject.GetComponent<WheelController>());
             
             i++;
@@ -60,9 +56,14 @@ public class Control : MonoBehaviour
     void Update()
     {
         var touchNext = false;
-        // foreach (var touch in Input.touches) {
         foreach (var touch in Input.touches) {
-            if (touch.phase != TouchPhase.Began) continue;
+            if (touch.phase != TouchPhase.Began) {
+                if (touch.phase != TouchPhase.Ended) {
+                    // Debug.Log($"touch moved: {touch.deltaPosition.x}, {touch.deltaPosition.y}");
+                    cameras[curCameraIndex].transform.Rotate(touch.deltaPosition.y/50, -touch.deltaPosition.x/50, 0);
+                }
+                continue;
+            }
             
             var xPosNorm = touch.position.x / Screen.width;
             var yPosNorm = touch.position.y / Screen.height;
@@ -73,19 +74,15 @@ public class Control : MonoBehaviour
         if (Input.GetKeyDown("t") || touchNext) {
             Debug.Log("switch car");
             
-            // disable old car
-            var carName = "toyCar"+(curCameraIndex+1);
-            var carObject = GameObject.Find(carName);
-            carObject.GetComponent<WheelController>().deactivate();
-
+            // disable current car/camera
+            cars[curCameraIndex].deactivate();
             cameras[curCameraIndex].enabled = false;
-            curCameraIndex = (curCameraIndex + 1) % cameras.Count;
-            cameras[curCameraIndex].enabled = true;
             
-            // enable new car
-            carName = "toyCar"+(curCameraIndex+1);
-            carObject = GameObject.Find(carName);
-            carObject.GetComponent<WheelController>().activate();
+            curCameraIndex = (curCameraIndex + 1) % cameras.Count;
+            
+            // enable next car/camera
+            cars[curCameraIndex].activate();
+            cameras[curCameraIndex].enabled = true;
         }
     }
 }
