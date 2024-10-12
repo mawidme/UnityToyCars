@@ -150,7 +150,8 @@ MonoBehaviour:
   maxTurnAngle: 15
   deltaX: 0
   touchToggle: 0
-  isActive: 0
+  rollingForward: 0
+  rollingBack: 0
 --- !u!65 &64876285
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1112,7 +1113,8 @@ MonoBehaviour:
   maxTurnAngle: 15
   deltaX: 0
   touchToggle: 0
-  isActive: 0
+  rollingForward: 0
+  rollingBack: 0
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -1439,7 +1441,8 @@ MonoBehaviour:
   maxTurnAngle: 15
   deltaX: 0
   touchToggle: 0
-  isActive: 1
+  rollingForward: 0
+  rollingBack: 0
 --- !u!1001 &1181243966
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2327,14 +2330,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1913748076}
-  m_LocalRotation: {x: 0.40803096, y: -0, z: -0, w: 0.91296804}
-  m_LocalPosition: {x: 0, y: 1.4, z: -1.15}
+  m_LocalRotation: {x: 0.250133, y: -0, z: -0, w: 0.96821153}
+  m_LocalPosition: {x: 0, y: 1.04, z: -1.38}
   m_LocalScale: {x: 0.6666667, y: 0.6666666, z: 0.6666666}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 64876287}
   m_RootOrder: 2
-  m_LocalEulerAnglesHint: {x: 48.162, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 28.971, y: 0, z: 0}
 --- !u!81 &1913748078
 AudioListener:
   m_ObjectHideFlags: 0
