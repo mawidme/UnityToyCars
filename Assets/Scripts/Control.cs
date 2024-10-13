@@ -10,6 +10,7 @@ public class Control : MonoBehaviour
     private List<WheelController> cars = new List<WheelController>();
     
     private bool rotatingCamera = false;
+    private float camRotDeltaSqr = 20f;
     
     // Start is called before the first frame update
     void Start()
@@ -77,7 +78,7 @@ public class Control : MonoBehaviour
                     // Debug.Log($"touch moved: {firstTouch.deltaPosition.x}, {firstTouch.deltaPosition.y}");
                     cameras[curCameraIndex].transform.Rotate(firstTouch.deltaPosition.y/50, -firstTouch.deltaPosition.x/50, 0);
                 }
-            } else if (Input.touches.Length == 1 && firstTouch.phase != TouchPhase.Began && firstTouch.phase != TouchPhase.Ended && firstTouch.deltaPosition.sqrMagnitude > 2f) {
+            } else if (Input.touches.Length == 1 && firstTouch.phase != TouchPhase.Began && firstTouch.phase != TouchPhase.Ended && firstTouch.deltaPosition.sqrMagnitude > camRotDeltaSqr) {
                 rotatingCamera = true;
             } else {
                 foreach (var touch in Input.touches) {
