@@ -59,6 +59,9 @@ public class Control : MonoBehaviour
     void Update()
     {
         var car = cars[curCameraIndex];
+        if (car == null) {
+            Debug.Log($"no car {curCameraIndex} found, num={cars.Count}");
+        }
         
         //TODO: clean/move touch handling
         // handle touches
@@ -71,16 +74,17 @@ public class Control : MonoBehaviour
             rotatingCamera = false;
         } else {
             var firstTouch = Input.touches[0];
-            if (rotatingCamera) {
-                if (firstTouch.phase == TouchPhase.Ended) {
-                    rotatingCamera = false;
-                } else {
-                    // Debug.Log($"touch moved: {firstTouch.deltaPosition.x}, {firstTouch.deltaPosition.y}");
-                    cameras[curCameraIndex].transform.Rotate(firstTouch.deltaPosition.y/50, -firstTouch.deltaPosition.x/50, 0);
-                }
-            } else if (Input.touches.Length == 1 && firstTouch.phase != TouchPhase.Began && firstTouch.phase != TouchPhase.Ended && firstTouch.deltaPosition.sqrMagnitude > camRotDeltaSqr) {
-                rotatingCamera = true;
-            } else {
+            // if (rotatingCamera) {
+                // if (firstTouch.phase == TouchPhase.Ended) {
+                    // rotatingCamera = false;
+                // } else {
+                    Debug.Log($"touch moved: {firstTouch.deltaPosition.x}, {firstTouch.deltaPosition.y}");
+                    // cameras[curCameraIndex].transform.Rotate(firstTouch.deltaPosition.y/50, -firstTouch.deltaPosition.x/50, 0);
+                // }
+            // } else if (Input.touches.Length == 1 && firstTouch.phase != TouchPhase.Began && firstTouch.phase != TouchPhase.Ended && firstTouch.deltaPosition.sqrMagnitude > camRotDeltaSqr) {
+                // rotatingCamera = true;
+            // } else
+            {
                 foreach (var touch in Input.touches) {
                     var xPosNorm = touch.position.x / Screen.width;
                     var yPosNorm = touch.position.y / Screen.height;
@@ -133,16 +137,18 @@ public class Control : MonoBehaviour
         car.SetControls(accelFactor, brakeFactor, steerFactor);
         
         if (Input.GetKeyDown("t") || touchNext) {
-            Debug.Log("switch car");
+            var prevCamIndex = curCameraIndex;
+            var nextCamIndex = (curCameraIndex + 1) % cameras.Count;
+            Debug.Log($"switch car: {prevCamIndex} -> {nextCamIndex}");
             
             // disable current camera
-            cameras[curCameraIndex].enabled = false;
-            
-            curCameraIndex = (curCameraIndex + 1) % cameras.Count;
+            cameras[prevCamIndex].enabled = false;
             
             // enable next camera
-            cameras[curCameraIndex].enabled = true;
-            cameras[curCameraIndex].transform.rotation = cameraStartRotation[curCameraIndex];
+            cameras[nextCamIndex].enabled = true;
+            // cameras[nextCamIndex].transform.rotation = cameraStartRotation[curCameraIndex];
+            
+            curCameraIndex = nextCamIndex;
         }
     }
 }
