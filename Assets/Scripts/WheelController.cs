@@ -35,7 +35,11 @@ public class WheelController : MonoBehaviour
     public void SetControls(float accelFactor, float brakeFactor, float steerFactor) {
         curAcceleration = accelFactor * acceleration;
         curBrakeForce = brakeFactor * brakeForce;
-        curTurnAngle = steerFactor * maxTurnAngle;
+        if (accelFactor == 0f && brakeFactor == 0f) {
+            curBrakeForce = standBrakeForce;
+        }
+        
+        curTurnAngle = steerFactor * maxTurnAngle;        
     }
     
     private void FixedUpdate() {
