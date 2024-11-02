@@ -11,9 +11,11 @@ public class Control : MonoBehaviour
     private int curCameraIndex = 0;
     private List<Camera> cameras = new List<Camera>();
     private List<Quaternion> cameraStartRotation = new List<Quaternion>();
+    
     // private List<WheelController> cars = new List<WheelController>();
     private List<GameObject> cars = new List<GameObject>();
-    
+    private List<Vector3> carStartPositions = new List<Vector3>();
+
     private TouchControls _touchControls;
 
     // camera rotation disabled
@@ -79,9 +81,11 @@ public class Control : MonoBehaviour
         
         car.SetControls(accelFactor, brakeFactor, steerFactor);
         
-        if (Input.GetKeyDown("r") || _touchControls.Released(TouchControls.ButtonType.NextCar)) {
+        if (Input.GetKeyDown("r") || _touchControls.Released(TouchControls.ButtonType.ResetCar)) {
+            Debug.Log($"reset car: {car.transform.position} -> {carStartPositions[curCameraIndex]}");
+            car.transform.position = carStartPositions[curCameraIndex];
         }
-        
+
         //TODO: implement car switch for MP mode
         if(!PhotonNetwork.IsConnected) {
             if (Input.GetKeyDown("t") || _touchControls.Released(TouchControls.ButtonType.NextCar)) {
@@ -152,8 +156,9 @@ public class Control : MonoBehaviour
                 break;
             }
 
-            // cars.Add(carObject.GetComponent<WheelController>());
             cars.Add(carObject);
+            
+            carStartPositions.Add(carObject.transform.position);
             
             i++;
         }
