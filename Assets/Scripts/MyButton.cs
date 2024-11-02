@@ -15,14 +15,14 @@ public class MyButton : Button
     public override void OnPointerDown(PointerEventData eventData)
     {
         base.OnPointerDown(eventData);
-        Debug.Log($"Down {buttonType}");
+        // Debug.Log($"button {buttonType} down");
         _pressed = true;
     }
 
     public override void OnPointerUp(PointerEventData eventData)
     {
         base.OnPointerUp(eventData);
-        Debug.Log($"Up {buttonType}");
+        // Debug.Log($"button {buttonType} up");
         _pressed = false;
     }
 }
