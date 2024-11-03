@@ -24,7 +24,9 @@ public class MpLauncher : MonoBehaviourPunCallbacks
 
     // Store the PlayerPref Key to avoid typos
     const string playerNamePrefKey = "PlayerName";
+    
     TMP_InputField _inputField;
+    Image _mpStartButtonImage;
 
     /// <summary>
     /// MonoBehaviour method called on GameObject by Unity during early initialization phase.
@@ -58,8 +60,9 @@ public class MpLauncher : MonoBehaviourPunCallbacks
         // we check if we are connected or not, we join if we are , else we initiate the connection to the server.
         if (PhotonNetwork.IsConnected)
         {
-            Debug.Log("PUN connected");
-            JoinRoom();
+            Debug.Log("PUN disconnect");
+
+            PhotonNetwork.LeaveRoom();
         }
         else
         {
@@ -86,17 +89,20 @@ public class MpLauncher : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
-        // Debug.Log($"OnJoinedRoom: {PhotonNetwork.CurrentRoom.Name}");
         Debug.Log("OnJoinedRoom");
 
+        _mpStartButtonImage.color = Color.green;
+
         //TODO: add PhotonView and PhotonTransformView to cars dynamically (not adding for SP)
-        SceneManager.LoadScene(1);
+        GameObject.Find("Ground").GetComponent<Control>().StartMp();
     }
     
 
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
         Debug.Log("OnJoinRoomFailed");
+
+        _mpStartButtonImage.color = Color.red;
     }
 
     public override void OnCreatedRoom()
@@ -104,9 +110,22 @@ public class MpLauncher : MonoBehaviourPunCallbacks
         Debug.Log("OnCreatedRoom");
     }
 
+    public override void OnLeftRoom()
+    {
+        Debug.Log("OnLeftRoom");
+        PhotonNetwork.Disconnect();
+    }
+
     public override void OnDisconnected(DisconnectCause cause)
     {
-        Debug.LogWarningFormat("OnDisconnected, reason {0}", cause);
+        var str = $"OnDisconnected, reason {cause}";
+        if (cause == DisconnectCause.DisconnectByClientLogic) {
+            Debug.Log(str);
+        } else {
+            Debug.LogWarningFormat(str);
+        }
+
+        _mpStartButtonImage.color = cause == DisconnectCause.DisconnectByClientLogic ? Color.white : Color.red;
     }
 
     // UI elements
@@ -124,6 +143,8 @@ public class MpLauncher : MonoBehaviourPunCallbacks
         }
 
         PhotonNetwork.NickName =  defaultName;
+
+        _mpStartButtonImage = GameObject.Find("MpStartButton").GetComponent<Image>();
     }
 
     public void SetPlayerName(string value)
