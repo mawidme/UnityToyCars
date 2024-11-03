@@ -23,7 +23,6 @@ public class TouchControls : MonoBehaviour
         NumButtonTypes
     }
     private GameObject[] _buttonObjects = new GameObject[(int)ButtonType.NumButtonTypes];
-    private Button[] _buttons = new Button[(int)ButtonType.NumButtonTypes];
     private MyButton[] _myButtons = new MyButton[(int)ButtonType.NumButtonTypes];
     private bool[] _buttonWasPressed = new bool[(int)ButtonType.NumButtonTypes];
     private bool[] _buttonPressed = new bool[(int)ButtonType.NumButtonTypes];
@@ -54,15 +53,13 @@ public class TouchControls : MonoBehaviour
     {
         for(var i=0; i<(int)ButtonType.NumButtonTypes; i++) {
             _buttonObjects[i] = GameObject.Find(_buttonNames[i]);
-            _buttons[i] = _buttonObjects[i].GetComponent<Button>();
 
             _myButtons[i] = _buttonObjects[i].GetComponent<MyButton>();
             if (_myButtons[i] != null) {
-                Debug.Log($"button {i}: set type");
+                // Debug.Log($"button {i}: set type");
                 _myButtons[i].SetButtonType(i);
             }
 
-            //  _buttons[i].onClick.AddListener(() => ButtonClicked(i));
             if (i != (int)ButtonType.ToggleTouch) {
                 // Debug.Log($"button {i} disabled");
                 _buttonObjects[i].SetActive(false);

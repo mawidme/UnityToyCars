@@ -84,6 +84,7 @@ public class Control : MonoBehaviour
         if (Input.GetKeyDown("r") || _touchControls.Released(TouchControls.ButtonType.ResetCar)) {
             Debug.Log($"reset car: {car.transform.position} -> {carStartPositions[curCameraIndex]}");
             car.transform.position = carStartPositions[curCameraIndex];
+            car.transform.rotation = Quaternion.identity;
         }
 
         //TODO: implement car switch for MP mode
@@ -215,6 +216,6 @@ public class Control : MonoBehaviour
 
     private void StartTouchControls()
     {
-        _touchControls = GameObject.Find("TouchControls").GetComponent<TouchControls>();
+        _touchControls = GameObject.Find("UI").GetComponent<TouchControls>();
     }
 }
