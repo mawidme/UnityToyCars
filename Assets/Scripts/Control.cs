@@ -87,7 +87,7 @@ public class Control : MonoBehaviour
             car.transform.rotation = Quaternion.identity;
         }
 
-        //TODO: implement car switch for MP mode
+        //TODO: implement car switch for MP mode (exchange indices, show player name on car)
         if(!PhotonNetwork.IsConnected) {
             if (Input.GetKeyDown("t") || _touchControls.Released(TouchControls.ButtonType.NextCar)) {
                 var prevCamIndex = curCameraIndex;
@@ -166,51 +166,48 @@ public class Control : MonoBehaviour
 
         Debug.Log("num cars: " + cars.Count);
 
-        if(PhotonNetwork.IsConnected) {
-            var ownId = PhotonNetwork.LocalPlayer.ActorNumber;
-            Debug.Log("ownId: " + ownId);
+        curCameraIndex = 0;
+        cameras[curCameraIndex].enabled = true;
+    }
 
-            // 1) select car based on actor id
-            curCameraIndex = ownId-1;
-            var carPhotonView = cars[curCameraIndex].GetComponent<PhotonView>();
-            carPhotonView.TransferOwnership(ownId);
-            cameras[curCameraIndex].enabled = true;
-            Debug.Log($"selected car {curCameraIndex}");
+    public void StartMp() {
+        var ownId = PhotonNetwork.LocalPlayer.ActorNumber;
+        Debug.Log("ownId: " + ownId);
 
-            // 2) select free car
-            /*
-            curCameraIndex = -1;
-            for(var j=0; j<cars.Count; j++) {
-                var carPhotonView = cars[j].GetComponent<PhotonView>();
+        // 1) select car based on actor id
+        curCameraIndex = ownId-1;
+        var carPhotonView = cars[curCameraIndex].GetComponent<PhotonView>();
+        carPhotonView.TransferOwnership(ownId);
+        cameras[curCameraIndex].enabled = true;
+        Debug.Log($"selected car {curCameraIndex}");
 
-                if (curCameraIndex >= 0) {
-                    if (carPhotonView.OwnerActorNr == ownId) {
-                        Debug.Log($"de-selected car {j}");
-                        carPhotonView.TransferOwnership(0);
-                    }
-                } else if (carPhotonView.IsMine || carPhotonView.OwnerActorNr == 0) {
-                    curCameraIndex = j;
-                    Debug.Log($"selected car {curCameraIndex}");
-                    carPhotonView.TransferOwnership(ownId);
-                    cameras[curCameraIndex].enabled = true;
+        // 2) select free car
+        /*
+        curCameraIndex = -1;
+        for(var j=0; j<cars.Count; j++) {
+            var carPhotonView = cars[j].GetComponent<PhotonView>();
+
+            if (curCameraIndex >= 0) {
+                if (carPhotonView.OwnerActorNr == ownId) {
+                    Debug.Log($"de-selected car {j}");
+                    carPhotonView.TransferOwnership(0);
                 }
+            } else if (carPhotonView.IsMine || carPhotonView.OwnerActorNr == 0) {
+                curCameraIndex = j;
+                Debug.Log($"selected car {curCameraIndex}");
+                carPhotonView.TransferOwnership(ownId);
+                cameras[curCameraIndex].enabled = true;
             }
-            if (curCameraIndex == -1) {
-                //TODO: handle no car free
-                Debug.Log("no free car found");
-            }
-            */
+        }
+        if (curCameraIndex == -1) {
+            //TODO: handle no car free
+            Debug.Log("no free car found");
+        }
+        */
 
-            for(var j=0; j<cars.Count; j++) {
-                var curPhotonView = cars[j].GetComponent<PhotonView>();
-                Debug.Log($"car {j}: IsMine={curPhotonView.IsMine}, OwnerActorNr={curPhotonView.OwnerActorNr}");
-            }
-        } else {
-            // single player (PUN not connected)
-            Debug.Log("single player -> selected first car");
-            
-            curCameraIndex = 0;
-            cameras[curCameraIndex].enabled = true;
+        for(var j=0; j<cars.Count; j++) {
+            var curPhotonView = cars[j].GetComponent<PhotonView>();
+            Debug.Log($"car {j}: IsMine={curPhotonView.IsMine}, OwnerActorNr={curPhotonView.OwnerActorNr}");
         }
     }
 
