@@ -36,7 +36,7 @@ public class WheelController : MonoBehaviour, IPunObservable
     public bool rollingBack = false;
 
     // MP
-    public bool synced = false;
+    public bool needToSync = true; // set to true when player joins
     public int playerId = 0;
     
     private int carIndex = -1;
@@ -100,7 +100,6 @@ public class WheelController : MonoBehaviour, IPunObservable
     }
 
  #region IPunObservable implementation
-
     //TODO: refactor as PUN RPC to save bandwidth?
     //TODO: move to separate controller class and add as component to all cars
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -114,15 +113,15 @@ public class WheelController : MonoBehaviour, IPunObservable
         else
         {
             // Network player, receive data
-            if (!synced) {
-                synced = true;
-                Debug.Log($"car {carIndex}: synced");
-            }
-
             var oldPlayerId = playerId;
-            this.playerId = (int)stream.ReceiveNext();
+            playerId = (int)stream.ReceiveNext();
             if (playerId != oldPlayerId) {
                 Debug.Log($"car {carIndex}: playerId {oldPlayerId} -> {playerId}");
+            }
+
+            if (needToSync) {
+                needToSync = false;
+                // Debug.Log($"car {carIndex}: synced");
             }
         }
     }

@@ -37,7 +37,7 @@ public class Control : MonoBehaviour
     {
         if (_mpStartScheduled) {
             for (var i=0; i<cars.Count; i++) {
-                if (!cars[i].GetComponent<WheelController>().synced) {
+                if (cars[i].GetComponent<WheelController>().needToSync) {
                     return;
                 }
             }
@@ -189,7 +189,11 @@ public class Control : MonoBehaviour
 
     public void ScheduleStartMp() {
         Debug.Log("ScheduleStartMp");
-        if (PhotonNetwork.LocalPlayer.ActorNumber == 1) {
+
+        TriggerCarResync();
+
+        //TODO: quicker sync for PhotonNetwork.PlayerListOthers?
+        if (PhotonNetwork.CountOfPlayers == 1) {
             // no players to sync car player id from yet
             StartMp();
         } else{
@@ -230,16 +234,32 @@ public class Control : MonoBehaviour
             //TODO: handle no car free
             Debug.Log("no free car found");
         }
-
-        for(var j=0; j<cars.Count; j++) {
-            var curPhotonView = cars[j].GetComponent<PhotonView>();
-            var curCar = cars[j].GetComponent<WheelController>();
-            Debug.Log($"car {j}: PlayerId={curCar.playerId}, IsMine={curPhotonView.IsMine}, OwnerActorNr={curPhotonView.OwnerActorNr}");
-        }
     }
 
     private void StartTouchControls()
     {
         _touchControls = GameObject.Find("UI").GetComponent<TouchControls>();
+    }
+
+    public void TriggerCarResync()
+    {
+        Debug.Log("TriggerCarResync");
+
+        for(var j=0; j<cars.Count; j++) {
+            cars[j].GetComponent<WheelController>().needToSync = true;
+        }
+    }
+
+    public void HandleMpPlayerLeft(int playerId) {
+        Debug.Log("HandleMpPlayerLeft: " + playerId);
+
+        for(var j=0; j<cars.Count; j++) {
+            var curCar = cars[j].GetComponent<WheelController>();
+            if (curCar.playerId == playerId) {
+                curCar.playerId = 0;
+                Debug.Log($"player {playerId} left, car {j} now free");
+                break;
+            }
+        }
     }
 }

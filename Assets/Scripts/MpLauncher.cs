@@ -28,6 +28,8 @@ public class MpLauncher : MonoBehaviourPunCallbacks
     TMP_InputField _inputField;
     Image _mpStartButtonImage;
 
+    Control _gameControl;
+
     /// <summary>
     /// MonoBehaviour method called on GameObject by Unity during early initialization phase.
     /// </summary>
@@ -42,6 +44,8 @@ public class MpLauncher : MonoBehaviourPunCallbacks
     void Start()
     {
         StartUi();
+
+        _gameControl = GameObject.Find("Ground").GetComponent<Control>();
     }
 
     // Update is called once per frame
@@ -124,9 +128,15 @@ public class MpLauncher : MonoBehaviourPunCallbacks
     {
         Debug.Log("OnJoinedRoom");
 
+        // default: 30
+        Debug.Log($"PhotonNetwork.sendRate: {PhotonNetwork.SendRate}");
+
+        // default: 10
+        Debug.Log($"PhotonNetwork.sendRateOnSerialize: {PhotonNetwork.SerializationRate}");
+
         _mpStartButtonImage.color = Color.green;
 
-        GameObject.Find("Ground").GetComponent<Control>().ScheduleStartMp();
+        _gameControl.ScheduleStartMp();
     }
     
 
@@ -158,6 +168,19 @@ public class MpLauncher : MonoBehaviourPunCallbacks
         }
 
         _mpStartButtonImage.color = cause == DisconnectCause.DisconnectByClientLogic ? Color.white : Color.red;
+    }
+
+    public override void OnPlayerEnteredRoom(Player remotePlayer)
+    {
+        Debug.Log("OnPlayerEnteredRoom");
+        _gameControl.TriggerCarResync();
+    }
+
+
+    public override void OnPlayerLeftRoom(Player remotePlayer)
+    {
+        Debug.Log($"OnPlayerLeftRoom: {remotePlayer.ActorNumber}");
+        _gameControl.HandleMpPlayerLeft(remotePlayer.ActorNumber);
     }
 #endregion
 }
