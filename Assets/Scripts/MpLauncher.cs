@@ -93,8 +93,7 @@ public class MpLauncher : MonoBehaviourPunCallbacks
 
         _mpStartButtonImage.color = Color.green;
 
-        //TODO: add PhotonView and PhotonTransformView to cars dynamically (not adding for SP)
-        GameObject.Find("Ground").GetComponent<Control>().StartMp();
+        GameObject.Find("Ground").GetComponent<Control>().ScheduleStartMp();
     }
     
 

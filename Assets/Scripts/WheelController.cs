@@ -1,8 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+
 using UnityEngine;
 
-public class WheelController : MonoBehaviour
+using Photon.Pun;
+
+public class WheelController : MonoBehaviour, IPunObservable
 {
     [SerializeField] WheelCollider frontRight;
     [SerializeField] WheelCollider frontLeft;
@@ -31,7 +34,16 @@ public class WheelController : MonoBehaviour
     
     public bool rollingForward = false;
     public bool rollingBack = false;
+
+    // MP
+    public bool synced = false;
+    public int playerId = 0;
     
+    private int carIndex = -1;
+    public void SetCarIndex(int index) {
+        carIndex = index;
+    }
+
     public void SetControls(float accelFactor, float brakeFactor, float steerFactor) {
         curAcceleration = accelFactor * acceleration;
         curBrakeForce = brakeFactor * brakeForce;
@@ -86,4 +98,34 @@ public class WheelController : MonoBehaviour
     void Update()
     {
     }
+
+ #region IPunObservable implementation
+
+    //TODO: refactor as PUN RPC to save bandwidth?
+    //TODO: move to separate controller class and add as component to all cars
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // We own this player: send the others our data
+            stream.SendNext(playerId);
+            // Debug.Log($"sent playerId {playerId}");
+        }
+        else
+        {
+            // Network player, receive data
+            if (!synced) {
+                synced = true;
+                Debug.Log($"car {carIndex}: synced");
+            }
+
+            var oldPlayerId = playerId;
+            this.playerId = (int)stream.ReceiveNext();
+            if (playerId != oldPlayerId) {
+                Debug.Log($"car {carIndex}: playerId {oldPlayerId} -> {playerId}");
+            }
+        }
+    }
+
+#endregion    
 }
