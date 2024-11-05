@@ -80,6 +80,39 @@ public class MpLauncher : MonoBehaviourPunCallbacks
         PhotonNetwork.JoinOrCreateRoom("TheOnlyRoom", new RoomOptions { MaxPlayers = maxPlayersPerRoom  }, null);
     }
     
+    // UI elements
+    private void StartUi()
+    {
+        string defaultName = "Player" + Random.Range(1, 1000);
+        _inputField = GameObject.Find("PlayerNameInput").GetComponent<TMP_InputField>();
+        if (_inputField != null)
+        {
+            if (PlayerPrefs.HasKey(playerNamePrefKey))
+            {
+                defaultName = PlayerPrefs.GetString(playerNamePrefKey);
+            }
+            _inputField.text = defaultName;
+        }
+
+        PhotonNetwork.NickName =  defaultName;
+
+        _mpStartButtonImage = GameObject.Find("MpStartButton").GetComponent<Image>();
+    }
+
+    public void SetPlayerName(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            Debug.LogError("Player Name is null or empty");
+            return;
+        }
+
+        PhotonNetwork.NickName = value;
+
+        PlayerPrefs.SetString(playerNamePrefKey, value);
+    }
+
+#region EventHandlers
     public override void OnConnectedToMaster()
     {
         Debug.Log("OnConnectedToMaster");
@@ -126,36 +159,5 @@ public class MpLauncher : MonoBehaviourPunCallbacks
 
         _mpStartButtonImage.color = cause == DisconnectCause.DisconnectByClientLogic ? Color.white : Color.red;
     }
-
-    // UI elements
-    private void StartUi()
-    {
-        string defaultName = "Player" + Random.Range(1, 1000);
-        _inputField = GameObject.Find("PlayerNameInput").GetComponent<TMP_InputField>();
-        if (_inputField != null)
-        {
-            if (PlayerPrefs.HasKey(playerNamePrefKey))
-            {
-                defaultName = PlayerPrefs.GetString(playerNamePrefKey);
-            }
-            _inputField.text = defaultName;
-        }
-
-        PhotonNetwork.NickName =  defaultName;
-
-        _mpStartButtonImage = GameObject.Find("MpStartButton").GetComponent<Image>();
-    }
-
-    public void SetPlayerName(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            Debug.LogError("Player Name is null or empty");
-            return;
-        }
-
-        PhotonNetwork.NickName = value;
-
-        PlayerPrefs.SetString(playerNamePrefKey, value);
-    }
+#endregion
 }
