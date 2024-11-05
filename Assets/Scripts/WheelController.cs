@@ -51,7 +51,10 @@ public class WheelController : MonoBehaviour
     }
     
     private void FixedUpdate() {
-
+        if (PhotonNetwork.IsConnected && !GetComponent<PhotonView>().IsMine) {
+            return;
+        }
+        
         var totalRpm = frontRight.rpm + frontLeft.rpm + backRight.rpm + backLeft.rpm;
         rollingForward = totalRpm > 10f;
         rollingBack = totalRpm < -10f;
