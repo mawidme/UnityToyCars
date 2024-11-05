@@ -5,7 +5,7 @@ using UnityEngine;
 
 using Photon.Pun;
 
-public class WheelController : MonoBehaviour, IPunObservable
+public class WheelController : MonoBehaviour
 {
     [SerializeField] WheelCollider frontRight;
     [SerializeField] WheelCollider frontLeft;
@@ -35,10 +35,6 @@ public class WheelController : MonoBehaviour, IPunObservable
     public bool rollingForward = false;
     public bool rollingBack = false;
 
-    // MP
-    public bool needToSync = true; // set to true when player joins
-    public int playerId = 0;
-    
     private int carIndex = -1;
     public void SetCarIndex(int index) {
         carIndex = index;
@@ -98,33 +94,4 @@ public class WheelController : MonoBehaviour, IPunObservable
     void Update()
     {
     }
-
- #region IPunObservable implementation
-    //TODO: refactor as PUN RPC to save bandwidth?
-    //TODO: move to separate controller class and add as component to all cars
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    {
-        if (stream.IsWriting)
-        {
-            // We own this player: send the others our data
-            stream.SendNext(playerId);
-            // Debug.Log($"sent playerId {playerId}");
-        }
-        else
-        {
-            // Network player, receive data
-            var oldPlayerId = playerId;
-            playerId = (int)stream.ReceiveNext();
-            if (playerId != oldPlayerId) {
-                Debug.Log($"car {carIndex}: playerId {oldPlayerId} -> {playerId}");
-            }
-
-            if (needToSync) {
-                needToSync = false;
-                // Debug.Log($"car {carIndex}: synced");
-            }
-        }
-    }
-
-#endregion    
 }
