@@ -63,6 +63,17 @@ public class TouchControls : MonoBehaviour
             if (i != (int)ButtonType.ToggleTouch) {
                 // Debug.Log($"button {i} disabled");
                 _buttonObjects[i].SetActive(false);
+
+                // make half transparent
+                var buttonImage = _buttonObjects[i].GetComponent<Image>();
+                var tempColor = buttonImage.color;
+                tempColor.a = 0.5f;
+                buttonImage.color = tempColor;
+                // text
+                var buttonText = _buttonObjects[i].GetComponentInChildren<TMP_Text>();
+                tempColor = buttonText.color;
+                tempColor.a = 0.5f;
+                buttonText.color = tempColor;
             }
         }
     }
