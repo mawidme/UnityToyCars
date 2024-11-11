@@ -4726,8 +4726,8 @@ WheelCollider:
   m_Center: {x: 0.207, y: -0.072, z: 0.3868}
   m_Radius: 0.085
   m_SuspensionSpring:
-    spring: 0
-    damper: 0
+    spring: 35000
+    damper: 4500
     targetPosition: 0.5
   m_SuspensionDistance: 0.1
   m_ForceAppPointDistance: 0
@@ -6341,8 +6341,8 @@ WheelCollider:
   m_Center: {x: 0.207, y: -0.072, z: -0.2134}
   m_Radius: 0.085
   m_SuspensionSpring:
-    spring: 0
-    damper: 0
+    spring: 35000
+    damper: 4500
     targetPosition: 0.5
   m_SuspensionDistance: 0.1
   m_ForceAppPointDistance: 0
@@ -6639,8 +6639,8 @@ WheelCollider:
   m_Center: {x: -0.207, y: -0.072, z: -0.2134}
   m_Radius: 0.085
   m_SuspensionSpring:
-    spring: 0
-    damper: 0
+    spring: 35000
+    damper: 4500
     targetPosition: 0.5
   m_SuspensionDistance: 0.1
   m_ForceAppPointDistance: 0
@@ -6980,8 +6980,8 @@ WheelCollider:
   m_Center: {x: -0.207, y: -0.072, z: 0.3868}
   m_Radius: 0.085
   m_SuspensionSpring:
-    spring: 0
-    damper: 0
+    spring: 35000
+    damper: 4500
     targetPosition: 0.5
   m_SuspensionDistance: 0.1
   m_ForceAppPointDistance: 0
