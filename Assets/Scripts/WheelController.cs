@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+using TMPro;
+
 using Photon.Pun;
 
 public class WheelController : MonoBehaviour
@@ -39,6 +41,8 @@ public class WheelController : MonoBehaviour
     public void SetCarIndex(int index) {
         carIndex = index;
     }
+
+    public TMP_Text _mpPlayerNameText;
 
     public void SetControls(float accelFactor, float brakeFactor, float steerFactor) {
         curAcceleration = accelFactor * acceleration;

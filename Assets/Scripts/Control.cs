@@ -4,6 +4,8 @@ using System.Linq;
 
 using UnityEngine;
 
+using TMPro;
+
 using Photon.Realtime;
 using Photon.Pun;
 
@@ -13,8 +15,9 @@ public class Control : MonoBehaviour
     private List<Camera> cameras = new List<Camera>();
     private List<Quaternion> cameraStartRotation = new List<Quaternion>();
     
-    // private List<WheelController> cars = new List<WheelController>();
-    private List<GameObject> cars = new List<GameObject>();
+    // private List<GameObject> carObjects = new List<GameObject>();
+    private List<WheelController> cars = new List<WheelController>();
+    private List<PhotonView> carViews = new List<PhotonView>();
     private List<Vector3> carStartPositions = new List<Vector3>();
 
     private TouchControls _touchControls;
@@ -38,18 +41,19 @@ public class Control : MonoBehaviour
     {
         if (WaitForMp()) return;
 
-        var carGameObject = cars[curCarIndex];
-        var car = carGameObject.GetComponent<WheelController>();
+        var car = cars[curCarIndex];
         if (car == null) {
             Debug.Log($"no car {curCarIndex} found, num={cars.Count}");
             return;
         }
 
-        var carPhotonView = carGameObject.GetComponent<PhotonView>();
+        /*
+        var carPhotonView = carViews[curCarIndex];
         if (!carPhotonView.IsMine) {
-            // Debug.Log($"selected car {curCarIndex} not owned, cannot update");
-            // return;
+            Debug.Log($"selected car {curCarIndex} not owned, cannot update");
+            return;
         }
+        */
         
         var accelFactor = 0f;
         var brakeFactor = 0f;
@@ -103,19 +107,17 @@ public class Control : MonoBehaviour
                     if (takenCars.Count < cars.Count) {
                         var ownId = PhotonNetwork.LocalPlayer.ActorNumber;
                         nextCamIndex = curCarIndex;
-                        // var nextCarPhotonView = carPhotonView;
                         var nextCar = car;
                         do {
                             nextCamIndex = (nextCamIndex + 1) % cameras.Count;
-                            // nextCarPhotonView = cars[nextCamIndex].GetComponent<PhotonView>();
-                            nextCar = cars[nextCamIndex].GetComponent<WheelController>();
+                            nextCar = cars[nextCamIndex];
                         } while (takenCars.Contains(nextCamIndex));
 
                         Debug.Log($"switch car: {prevCarIndex} -> {nextCamIndex}, ownId={ownId}");
 
                         MpSelectCar(nextCamIndex);
 
-                        cars[nextCamIndex].GetComponent<PhotonView>().TransferOwnership(ownId);
+                        carViews[nextCamIndex].TransferOwnership(ownId);
                     }
                 } else {
                     nextCamIndex = (curCarIndex + 1) % cameras.Count;
@@ -138,7 +140,7 @@ public class Control : MonoBehaviour
     {
         Debug.Log("control start");
 
-        // detect cameras
+        // find cameras
         int i = 1;
         while (true) {
             // Debug.Log("checking camera " + i);
@@ -158,7 +160,7 @@ public class Control : MonoBehaviour
 
         Debug.Log("num cameras: " + cameras.Count);
 
-        // detect cars
+        // find cars
         i = 1;
         while (true) {
             var carObject = GameObject.Find("toyCar"+i);
@@ -166,12 +168,26 @@ public class Control : MonoBehaviour
                 break;
             }
 
-            carObject.GetComponent<WheelController>().SetCarIndex(i-1);
-
-            cars.Add(carObject);
-            
             carStartPositions.Add(carObject.transform.position);
             
+            var carView = carObject.GetComponent<PhotonView>();
+            carViews.Add(carView);
+
+            var car = carObject.GetComponent<WheelController>();
+            cars.Add(car);
+            car.SetCarIndex(i-1);
+
+            var carName = $"mpPlayerName{i}";
+            // Debug.Log($"car {i} name obj: {carName}");
+            var mpPlayerNameObject = GameObject.Find(carName);
+            if (mpPlayerNameObject != null) {
+                car._mpPlayerNameText = mpPlayerNameObject.GetComponent<TMP_Text>();
+                Debug.Log($"found name text for car {i}: {car._mpPlayerNameText}");
+                car._mpPlayerNameText.enabled = false;
+            } else {
+                Debug.Log($"no name object found for car {i}");
+            }
+
             i++;
         }
 
@@ -218,13 +234,13 @@ public class Control : MonoBehaviour
         var takenCars = MpGetTakenCars();
         curCarIndex = -1;
         for(var j=0; j<cars.Count; j++) {
-            var curCar = cars[j].GetComponent<WheelController>();
+            var curCar = cars[j];
 
             if (!takenCars.Contains(j)) {
                 curCarIndex = j;
                 Debug.Log($"selected car {curCarIndex}");
 
-                cars[curCarIndex].GetComponent<PhotonView>().TransferOwnership(ownId);
+                carViews[curCarIndex].TransferOwnership(ownId);
                 cameras[curCarIndex].enabled = true;
 
                 MpSelectCar(curCarIndex);
@@ -261,5 +277,35 @@ public class Control : MonoBehaviour
 
     public void HandleMpPlayerLeft(int playerId) {
         Debug.Log("HandleMpPlayerLeft: " + playerId);
+    }
+
+    public void HandleMpPlayerPropertiesUpdate(Player player, ExitGames.Client.Photon.Hashtable propertiesThatChanged)
+    {
+        Debug.Log($"HandleMpPlayerPropertiesUpdate: player {player.ActorNumber}, properties {propertiesThatChanged}");
+        // Debug.Log($"HandleMpPlayerPropertiesUpdate: player {player.ActorNumber}");
+
+        var oldCarIndex = -1;
+        if (player != null && player.CustomProperties != null && player.CustomProperties["playerId"] != null) {
+            // remove previous car's player name
+            // oldCarIndex = (int)player.CustomProperties["playerId"];
+            oldCarIndex = (int)player.CustomProperties["playerId"] - 1;
+            if (oldCarIndex < 0) oldCarIndex = cars.Count -1;
+            WheelController oldCar = cars[oldCarIndex];
+            // oldCar._mpPlayerNameText.text = "";
+            oldCar._mpPlayerNameText.enabled = false;
+        } else {
+            Debug.Log("player CustomProperties null");
+        }
+
+        if (propertiesThatChanged["playerId"] != null) {
+            var newCarIndex = (int)propertiesThatChanged["playerId"];
+            Debug.Log($"player {player.ActorNumber}/'{player.NickName}' car switch: {oldCarIndex} -> {newCarIndex}");
+
+            //TODO: truncate
+            // add new car's player name
+            WheelController newCar = cars[newCarIndex];
+            newCar._mpPlayerNameText.text = player.NickName;
+            newCar._mpPlayerNameText.enabled = true;
+        }
     }
 }

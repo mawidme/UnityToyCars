@@ -96,6 +96,8 @@ public class MpLauncher : MonoBehaviourPunCallbacks
                 defaultName = PlayerPrefs.GetString(playerNamePrefKey);
             }
             _inputField.text = defaultName;
+
+            _inputField.onValueChanged.AddListener(delegate { SetPlayerName(); });
         }
 
         PhotonNetwork.NickName =  defaultName;
@@ -103,14 +105,17 @@ public class MpLauncher : MonoBehaviourPunCallbacks
         _mpStartButtonImage = GameObject.Find("MpStartButton").GetComponent<Image>();
     }
 
-    public void SetPlayerName(string value)
+    // public void SetPlayerName(string value)
+    public void SetPlayerName()
     {
+        var value = _inputField.text;
         if (string.IsNullOrEmpty(value))
         {
             Debug.LogError("Player Name is null or empty");
             return;
         }
 
+        Debug.Log($"Set MP player name: {PhotonNetwork.NickName} -> {value}");
         PhotonNetwork.NickName = value;
 
         PlayerPrefs.SetString(playerNamePrefKey, value);
@@ -181,6 +186,13 @@ public class MpLauncher : MonoBehaviourPunCallbacks
     {
         Debug.Log($"OnPlayerLeftRoom: {remotePlayer.ActorNumber}");
         _gameControl.HandleMpPlayerLeft(remotePlayer.ActorNumber);
+    }
+
+    public override void OnPlayerPropertiesUpdate(Player remotePlayer, ExitGames.Client.Photon.Hashtable propertiesThatChanged)
+    {
+        Debug.Log("OnPlayerPropertiesUpdate");
+        _gameControl.HandleMpPlayerPropertiesUpdate(remotePlayer, propertiesThatChanged);
+        base.OnPlayerPropertiesUpdate(remotePlayer, propertiesThatChanged);
     }
 #endregion
 }
