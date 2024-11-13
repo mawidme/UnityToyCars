@@ -1,26 +1,149 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+
 using UnityEngine;
+
+using TMPro;
+
+using Photon.Realtime;
+using Photon.Pun;
 
 public class Control : MonoBehaviour
 {
-    private int curCameraIndex = 0;
+    private int curCarIndex = 0;
     private List<Camera> cameras = new List<Camera>();
     private List<Quaternion> cameraStartRotation = new List<Quaternion>();
-    private List<WheelController> cars = new List<WheelController>();
     
-    private bool rotatingCamera = false;
-    private float camRotDeltaSqr = 20f;
+    // private List<GameObject> carObjects = new List<GameObject>();
+    private List<WheelController> cars = new List<WheelController>();
+    private List<PhotonView> carViews = new List<PhotonView>();
+    private List<Vector3> carStartPositions = new List<Vector3>();
+
+    private TouchControls _touchControls;
+
+    private bool _mpStartScheduled = false;
+
+    // camera rotation disabled
+    // private bool rotatingCamera = false;
+    // private float camRotDeltaSqr = 20f;
     
     // Start is called before the first frame update
     void Start()
     {
+        StartCars();
+        
+        StartTouchControls();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (WaitForMp()) return;
+
+        var car = cars[curCarIndex];
+        if (car == null) {
+            Debug.Log($"no car {curCarIndex} found, num={cars.Count}");
+            return;
+        }
+
+        /*
+        var carPhotonView = carViews[curCarIndex];
+        if (!carPhotonView.IsMine) {
+            Debug.Log($"selected car {curCarIndex} not owned, cannot update");
+            return;
+        }
+        */
+        
+        var accelFactor = 0f;
+        var brakeFactor = 0f;
+        var steerFactor = 0f;
+        
+        // accelFactor = acceleration * Input.GetAxis("Vertical");
+        if (Input.GetKey("up") || _touchControls.Held(TouchControls.ButtonType.Accelerate)) {
+            if (car.rollingBack) {
+                brakeFactor = 1f;
+            } else {
+                accelFactor += 1f;
+            }
+        }
+
+        // brake on space
+        // if (Input.GetKey(KeyCode.Space)) {
+        if (Input.GetKey("down") || _touchControls.Held(TouchControls.ButtonType.Brake)) {
+            if (car.rollingForward) {
+                brakeFactor = 1f;
+            } else {
+                accelFactor -= 1f;
+            }
+        }
+
+        if (Input.GetKey("left") || _touchControls.Held(TouchControls.ButtonType.SteerLeft)) {
+            steerFactor -= 1f;
+        }
+        if (Input.GetKey("right") || _touchControls.Held(TouchControls.ButtonType.SteerRight)) {
+            steerFactor += 1f;
+        }
+
+        // curTurnAngle = maxTurnAngle * Input.GetAxis("Horizontal");
+        
+        car.SetControls(accelFactor, brakeFactor, steerFactor);
+        
+        if (Input.GetKeyDown("r") || _touchControls.Released(TouchControls.ButtonType.ResetCar)) {
+            Debug.Log($"reset car: {car.transform.position} -> {carStartPositions[curCarIndex]}");
+            car.transform.position = carStartPositions[curCarIndex];
+            car.transform.rotation = Quaternion.identity;
+        }
+
+        //TODO: implement car switch for MP mode (exchange indices, show player name on car)
+        // if(!PhotonNetwork.IsConnected)
+        {
+            if (Input.GetKeyDown("t") || _touchControls.Released(TouchControls.ButtonType.NextCar)) {
+                var prevCarIndex = curCarIndex;
+
+                var nextCamIndex = -1;
+                if (PhotonNetwork.IsConnected) {
+                    var takenCars = MpGetTakenCars();
+                    if (takenCars.Count < cars.Count) {
+                        var ownId = PhotonNetwork.LocalPlayer.ActorNumber;
+                        nextCamIndex = curCarIndex;
+                        var nextCar = car;
+                        do {
+                            nextCamIndex = (nextCamIndex + 1) % cameras.Count;
+                            nextCar = cars[nextCamIndex];
+                        } while (takenCars.Contains(nextCamIndex));
+
+                        Debug.Log($"switch car: {prevCarIndex} -> {nextCamIndex}, ownId={ownId}");
+
+                        MpSelectCar(nextCamIndex);
+
+                        carViews[nextCamIndex].TransferOwnership(ownId);
+                    }
+                } else {
+                    nextCamIndex = (curCarIndex + 1) % cameras.Count;
+                    Debug.Log($"switch car: {prevCarIndex} -> {nextCamIndex}");                
+                }
+
+                // disable current camera
+                cameras[prevCarIndex].enabled = false;
+                
+                // enable next camera
+                cameras[nextCamIndex].enabled = true;
+                // cameras[nextCamIndex].transform.rotation = cameraStartRotation[curCarIndex];
+                
+                curCarIndex = nextCamIndex;
+            }
+        }
+    }
+
+    private void StartCars()
+    {
         Debug.Log("control start");
 
-        // detect cameras
+        // find cameras
         int i = 1;
         while (true) {
-            Debug.Log("checking camera " + i);
+            // Debug.Log("checking camera " + i);
             
             var camObject = GameObject.Find("camera"+i);
             if (camObject == null) {
@@ -37,9 +160,7 @@ public class Control : MonoBehaviour
 
         Debug.Log("num cameras: " + cameras.Count);
 
-        cameras[0].enabled = true;
-        
-        // detect cars
+        // find cars
         i = 1;
         while (true) {
             var carObject = GameObject.Find("toyCar"+i);
@@ -47,108 +168,144 @@ public class Control : MonoBehaviour
                 break;
             }
 
-            cars.Add(carObject.GetComponent<WheelController>());
+            carStartPositions.Add(carObject.transform.position);
             
+            var carView = carObject.GetComponent<PhotonView>();
+            carViews.Add(carView);
+
+            var car = carObject.GetComponent<WheelController>();
+            cars.Add(car);
+            car.SetCarIndex(i-1);
+
+            var carName = $"mpPlayerName{i}";
+            // Debug.Log($"car {i} name obj: {carName}");
+            var mpPlayerNameObject = GameObject.Find(carName);
+            if (mpPlayerNameObject != null) {
+                car._mpPlayerNameText = mpPlayerNameObject.GetComponent<TMP_Text>();
+                Debug.Log($"found name text for car {i}: {car._mpPlayerNameText}");
+                car._mpPlayerNameText.enabled = false;
+            } else {
+                Debug.Log($"no name object found for car {i}");
+            }
+
             i++;
         }
 
         Debug.Log("num cars: " + cars.Count);
+
+        curCarIndex = 0;
+        cameras[curCarIndex].enabled = true;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        var car = cars[curCameraIndex];
-        if (car == null) {
-            Debug.Log($"no car {curCameraIndex} found, num={cars.Count}");
+    public void ScheduleStartMp() {
+        Debug.Log("ScheduleStartMp");
+
+        TriggerCarResync();
+
+        //TODO: quicker sync for PhotonNetwork.PlayerListOthers?
+        if (PhotonNetwork.CountOfPlayers == 1) {
+            // no players to sync car player id from yet
+            StartMp();
+        } else{
+            _mpStartScheduled = true;
         }
-        
-        //TODO: clean/move touch handling
-        // handle touches
-        var touchTop = false;
-        var touchBottom = false;
-        var touchLeft = false;
-        var touchRight = false;
-        var touchNext = false;
-        if (Input.touches.Length == 0) {
-            rotatingCamera = false;
-        } else {
-            var firstTouch = Input.touches[0];
-            // if (rotatingCamera) {
-                // if (firstTouch.phase == TouchPhase.Ended) {
-                    // rotatingCamera = false;
-                // } else {
-                    Debug.Log($"touch moved: {firstTouch.deltaPosition.x}, {firstTouch.deltaPosition.y}");
-                    // cameras[curCameraIndex].transform.Rotate(firstTouch.deltaPosition.y/50, -firstTouch.deltaPosition.x/50, 0);
-                // }
-            // } else if (Input.touches.Length == 1 && firstTouch.phase != TouchPhase.Began && firstTouch.phase != TouchPhase.Ended && firstTouch.deltaPosition.sqrMagnitude > camRotDeltaSqr) {
-                // rotatingCamera = true;
-            // } else
-            {
-                foreach (var touch in Input.touches) {
-                    var xPosNorm = touch.position.x / Screen.width;
-                    var yPosNorm = touch.position.y / Screen.height;
-                    
-                    if (touch.phase == TouchPhase.Began) {
-                        touchNext |= xPosNorm < 0.5f && yPosNorm > 0.6f;
-                    } else if (touch.phase != TouchPhase.Ended) {
-                        touchTop |= xPosNorm > 0.6f && yPosNorm > 0.6f;
-                        touchBottom |= xPosNorm > 0.6f && yPosNorm < 0.4f;
-                        
-                        touchLeft |= xPosNorm < 0.25f && yPosNorm < 0.4f;
-                        touchRight |= !touchLeft && xPosNorm < 0.5f && yPosNorm < 0.4f;
-                    }
+    }
+
+    public bool WaitForMp() {
+        if (_mpStartScheduled) {
+            foreach (var remotePlayer in PhotonNetwork.PlayerListOthers) {
+                var playerId = remotePlayer.CustomProperties["playerId"];
+                if (playerId == null) {
+                    return true;
                 }
             }
+            _mpStartScheduled = false;
+            StartMp();
         }
-        
-        var accelFactor = 0f;
-        var brakeFactor = 0f;
-        var steerFactor = 0f;
-        
-        // accelFactor = acceleration * Input.GetAxis("Vertical");
-        if (Input.GetKey("up") || touchTop) {
-            if (car.rollingBack) {
-                brakeFactor = 1f;
-            } else {
-                accelFactor += 1f;
+
+        return false;
+    }
+
+    public void StartMp() {
+        var ownId = PhotonNetwork.LocalPlayer.ActorNumber;
+        Debug.Log("StartMp, ownId: " + ownId);
+
+        // select free car
+        var takenCars = MpGetTakenCars();
+        curCarIndex = -1;
+        for(var j=0; j<cars.Count; j++) {
+            var curCar = cars[j];
+
+            if (!takenCars.Contains(j)) {
+                curCarIndex = j;
+                Debug.Log($"selected car {curCarIndex}");
+
+                carViews[curCarIndex].TransferOwnership(ownId);
+                cameras[curCarIndex].enabled = true;
+
+                MpSelectCar(curCarIndex);
+
+                break;
             }
         }
+        if (curCarIndex == -1) {
+            //TODO: disconnect, red MP button
+            Debug.Log("no free car found");
+        }
+    }
 
-        // brake on space
-        // if (Input.GetKey(KeyCode.Space)) {
-        if (Input.GetKey("down") || touchBottom) {
-            if (car.rollingForward) {
-                brakeFactor = 1f;
-            } else {
-                accelFactor -= 1f;
-            }
+    private List<int> MpGetTakenCars() {
+        var takenCars = PhotonNetwork.PlayerListOthers.Select(p => (int)p.CustomProperties["playerId"]).ToList();
+        Debug.Log("MpGetTakenCars: " + string.Join(", ", takenCars));
+        return takenCars;
+    }
+
+    private void MpSelectCar(int carIndex) {
+        Debug.Log("MpSelectCar: " + carIndex);
+        PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { { "playerId", carIndex } });
+    }
+
+    private void StartTouchControls()
+    {
+        _touchControls = GameObject.Find("UI").GetComponent<TouchControls>();
+    }
+
+    public void TriggerCarResync()
+    {
+        Debug.Log("TriggerCarResync");
+    }
+
+    public void HandleMpPlayerLeft(int playerId) {
+        Debug.Log("HandleMpPlayerLeft: " + playerId);
+    }
+
+    public void HandleMpPlayerPropertiesUpdate(Player player, ExitGames.Client.Photon.Hashtable propertiesThatChanged)
+    {
+        Debug.Log($"HandleMpPlayerPropertiesUpdate: player {player.ActorNumber}, properties {propertiesThatChanged}");
+        // Debug.Log($"HandleMpPlayerPropertiesUpdate: player {player.ActorNumber}");
+
+        var oldCarIndex = -1;
+        if (player != null && player.CustomProperties != null && player.CustomProperties["playerId"] != null) {
+            // remove previous car's player name
+            // oldCarIndex = (int)player.CustomProperties["playerId"];
+            oldCarIndex = (int)player.CustomProperties["playerId"] - 1;
+            if (oldCarIndex < 0) oldCarIndex = cars.Count -1;
+            WheelController oldCar = cars[oldCarIndex];
+            // oldCar._mpPlayerNameText.text = "";
+            oldCar._mpPlayerNameText.enabled = false;
+        } else {
+            Debug.Log("player CustomProperties null");
         }
 
-        if (Input.GetKey("left") || touchLeft) {
-            steerFactor -= 1f;
-        }
-        if (Input.GetKey("right") || touchRight) {
-            steerFactor += 1f;
-        }
+        if (propertiesThatChanged["playerId"] != null) {
+            var newCarIndex = (int)propertiesThatChanged["playerId"];
+            Debug.Log($"player {player.ActorNumber}/'{player.NickName}' car switch: {oldCarIndex} -> {newCarIndex}");
 
-        // curTurnAngle = maxTurnAngle * Input.GetAxis("Horizontal");
-        
-        car.SetControls(accelFactor, brakeFactor, steerFactor);
-        
-        if (Input.GetKeyDown("t") || touchNext) {
-            var prevCamIndex = curCameraIndex;
-            var nextCamIndex = (curCameraIndex + 1) % cameras.Count;
-            Debug.Log($"switch car: {prevCamIndex} -> {nextCamIndex}");
-            
-            // disable current camera
-            cameras[prevCamIndex].enabled = false;
-            
-            // enable next camera
-            cameras[nextCamIndex].enabled = true;
-            // cameras[nextCamIndex].transform.rotation = cameraStartRotation[curCameraIndex];
-            
-            curCameraIndex = nextCamIndex;
+            //TODO: truncate
+            // add new car's player name
+            WheelController newCar = cars[newCarIndex];
+            newCar._mpPlayerNameText.text = player.NickName;
+            newCar._mpPlayerNameText.enabled = true;
         }
     }
 }

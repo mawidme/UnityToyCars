@@ -1,6 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+
 using UnityEngine;
+
+using TMPro;
+
+using Photon.Pun;
 
 public class WheelController : MonoBehaviour
 {
@@ -31,15 +36,29 @@ public class WheelController : MonoBehaviour
     
     public bool rollingForward = false;
     public bool rollingBack = false;
-    
+
+    private int carIndex = -1;
+    public void SetCarIndex(int index) {
+        carIndex = index;
+    }
+
+    public TMP_Text _mpPlayerNameText;
+
     public void SetControls(float accelFactor, float brakeFactor, float steerFactor) {
         curAcceleration = accelFactor * acceleration;
         curBrakeForce = brakeFactor * brakeForce;
-        curTurnAngle = steerFactor * maxTurnAngle;
+        if (accelFactor == 0f && brakeFactor == 0f) {
+            curBrakeForce = standBrakeForce;
+        }
+        
+        curTurnAngle = steerFactor * maxTurnAngle;        
     }
     
     private void FixedUpdate() {
-
+        if (PhotonNetwork.IsConnected && !GetComponent<PhotonView>().IsMine) {
+            return;
+        }
+        
         var totalRpm = frontRight.rpm + frontLeft.rpm + backRight.rpm + backLeft.rpm;
         rollingForward = totalRpm > 10f;
         rollingBack = totalRpm < -10f;
