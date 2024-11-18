@@ -100,5 +100,9 @@ public class WheelController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (_mpPlayerNameText.enabled) {
+            // rotate player name text to face camera
+            _mpPlayerNameText.transform.LookAt(Camera.main.transform);
+        }
     }
 }
